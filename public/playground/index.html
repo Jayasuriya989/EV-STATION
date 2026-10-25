@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safe Station Environment ⚡ &bull; 10s Real-Time Simulation</title>
+  <meta name="description" content="Safe Station RL Environment simulating car details, charging info, reward details, and Q-learning details every 10 seconds.">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation / Telemetry Header -->
+  <header class="env-header">
+    <div class="container">
+      <div class="header-row">
+        <div class="brand-badge-group">
+          <div class="logo-lightning">
+            <i class="fas fa-bolt"></i>
+          </div>
+          <div class="brand-titles">
+            <h1>Safe Station Environment ⚡ <span class="tag">OpenEnv</span></h1>
+            <p>Smart EV Station RL Simulator &bull; Autonomous Grid vs BESS Arbitration</p>
+          </div>
+        </div>
+
+        <div class="rl-telemetry-row font-mono" style="display: flex; gap: 1rem;">
+          <div style="font-size: 0.8rem; color: #94A3B8;">
+            Step: <strong id="headStep" style="color: #00F0FF;">1</strong>
+          </div>
+          <div style="font-size: 0.8rem; color: #94A3B8;">
+            Episode: <strong id="headEpisode" style="color: #FFFFFF;">#1</strong>
+          </div>
+          <div style="font-size: 0.8rem; color: #94A3B8;">
+            Cumulative Profit: <strong id="headProfit" style="color: #10B981;">₹240.0</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- 10-Second Simulation Countdown Banner -->
+    <section class="simulation-timer-banner">
+      <div class="sim-status-group">
+        <div class="countdown-radial-box">
+          <div id="timerCountdownBadge" class="timer-badge font-mono">10.0s</div>
+          <div class="sim-text-block">
+            <h3>Real-Time Environment Simulation Active</h3>
+            <p>New state transition, battery arbitration, and RL reward calculated every 10 seconds</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="sim-controls-group">
+        <button id="btnPauseResume" class="btn btn-secondary">
+          <i class="fas fa-pause"></i> Pause Timer
+        </button>
+        <button id="btnStepNow" class="btn btn-primary">
+          <i class="fas fa-step-forward"></i> Simulate Step Now
+        </button>
+        <button id="btnSpeedToggle" class="btn btn-secondary">
+          <i class="fas fa-clock"></i> Speed: 10s (Standard)
+        </button>
+      </div>
+
+      <!-- Real-Time Progress Bar -->
+      <div class="timer-progress-track">
+        <div id="timerProgressBar" class="timer-progress-bar" style="width: 100%;"></div>
+      </div>
+    </section>
+
+    <!-- 4 Main Core Panels: Car Details, Charging Info, Reward Details, Learning Details -->
+    <div class="four-panels-grid">
+
+      <!-- PANEL 1: Car Details -->
+      <div class="sim-card" style="--card-accent: #00F0FF;">
+        <div class="sim-card-header">
+          <div class="card-title-badge">
+            <i class="fas fa-car-side"></i>
+            <span>1. Connected EV & Car Details</span>
+          </div>
+          <div class="live-badge">
+            <div class="pulse-dot"></div>
+            <span>LIVE BAY</span>
+          </div>
+        </div>
+
+        <!-- Vehicle Profile Block -->
+        <div class="car-identity-block">
+          <div style="display: flex; align-items: center; gap: 0.85rem;">
+            <div class="car-avatar-icon">
+              <i class="fas fa-car"></i>
+            </div>
+            <div class="car-main-info">
+              <h4 id="carModelText">Tesla Model 3</h4>
+              <p id="carPlateText" class="font-mono">Plate: EV-8042 &bull; 75 kWh Capacity</p>
+            </div>
+          </div>
+          <div id="carStatusBadge" class="font-mono" style="font-size: 0.78rem; font-weight: 700;">
+            <i class="fas fa-bolt"></i> Fast Discharging from BESS
+          </div>
+        </div>
+
+        <!-- Sub-stats Grid -->
+        <div class="car-stats-subgrid">
+          <div class="substat-box">
+            <span class="substat-label">Schedule</span>
+            <span id="carArrDepTime" class="substat-value font-mono" style="font-size: 0.88rem;">08:00 ➔ 17:30</span>
+          </div>
+          <div class="substat-box">
+            <span class="substat-label">Demand Remaining</span>
+            <span id="carNeedUnits" class="substat-value font-mono" style="color: #00F0FF;">40 units</span>
+          </div>
+          <div class="substat-box">
+            <span class="substat-label">Current Battery</span>
+            <span id="carSocCurrent" class="substat-value font-mono" style="color: #10B981;">20%</span>
+          </div>
+        </div>
+
+        <!-- Battery Progress Bar -->
+        <div class="car-battery-progress-block">
+          <div class="progress-labels-row font-mono">
+            <span style="color: #94A3B8;">State of Charge (SoC)</span>
+            <span id="carSocTarget" style="color: #00F0FF;">Target: 80%</span>
+          </div>
+          <div class="large-battery-track">
+            <div id="carBatteryBar" class="large-battery-fill" style="width: 20%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL 2: Charging Info -->
+      <div class="sim-card" style="--card-accent: #3B82F6;">
+        <div class="sim-card-header">
+          <div class="card-title-badge">
+            <i class="fas fa-charging-station"></i>
+            <span>2. Real-Time Charging Info</span>
+          </div>
+          <div class="live-badge" style="background: rgba(59, 130, 246, 0.15); color: #60A5FA; border-color: rgba(59, 130, 246, 0.3);">
+            <span>POWER ROUTE</span>
+          </div>
+        </div>
+
+        <!-- Active Source Banner -->
+        <div class="active-source-badge-banner">
+          <div>
+            <span style="font-size: 0.72rem; color: #94A3B8; text-transform: uppercase; font-weight: 700;">Active Power Source</span>
+            <div id="activeSourceText" class="source-status-text">Station BESS Battery (Peak-Shaving 20 kW)</div>
+          </div>
+          <div style="font-size: 1.5rem; color: #00F0FF;">
+            <i class="fas fa-arrows-split-up-and-left"></i>
+          </div>
+        </div>
+
+        <!-- Power Draw Subgrid -->
+        <div class="car-stats-subgrid">
+          <div class="substat-box">
+            <span class="substat-label">Discharged from BESS</span>
+            <span id="powerBessText" class="substat-value font-mono" style="color: #00F0FF;">20 kW</span>
+          </div>
+          <div class="substat-box">
+            <span class="substat-label">Drawn from Grid</span>
+            <span id="powerGridText" class="substat-value font-mono" style="color: #64748B;">0 kW</span>
+          </div>
+          <div class="substat-box">
+            <span class="substat-label">Grid Tariff Rate</span>
+            <span id="chargingGridPrice" class="substat-value font-mono">₹8.50</span>
+            <span id="priceCategoryTag" style="font-size: 0.65rem; color: #EF4444; font-weight: 600;">Peak Tariff Rate</span>
+          </div>
+        </div>
+
+        <!-- BESS Storage Tank Level Gauge -->
+        <div class="bess-tank-gauge-box">
+          <div class="tank-gauge-row font-mono">
+            <span style="font-size: 0.75rem; color: #94A3B8;"><i class="fas fa-database"></i> Station BESS Capacity</span>
+            <span id="bessTankLevelText" style="font-size: 0.8rem; font-weight: 700; color: #10B981;">60.0 / 100 units (60%)</span>
+          </div>
+          <div class="tank-bar-track">
+            <div id="bessTankFill" class="tank-bar-fill" style="width: 60%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL 3: Reward Details -->
+      <div class="sim-card" style="--card-accent: #10B981;">
+        <div class="sim-card-header">
+          <div class="card-title-badge">
+            <i class="fas fa-trophy"></i>
+            <span>3. Reward Details & Profit Feedback</span>
+          </div>
+          <div class="live-badge" style="background: rgba(16, 185, 129, 0.15); color: #34D399;">
+            <span>RL FEEDBACK</span>
+          </div>
+        </div>
+
+        <!-- Current Step Reward Highlight -->
+        <div class="reward-highlight-banner">
+          <div>
+            <span style="font-size: 0.72rem; color: #94A3B8; text-transform: uppercase; font-weight: 700;">Latest Step Reward Signal</span>
+            <div id="rewardPtsDisplay" class="reward-pts-big font-mono">+50.0 pts</div>
+          </div>
+          <div style="text-align: right;">
+            <span style="font-size: 0.72rem; color: #94A3B8; text-transform: uppercase; font-weight: 700;">Station Cumulative Profit</span>
+            <div id="totalProfitText" class="font-mono" style="font-size: 1.4rem; font-weight: 800; color: #10B981;">₹240.0</div>
+            <div id="episodeRewardText" style="font-size: 0.72rem; color: #94A3B8;" class="font-mono">Episode: 50.0 pts</div>
+          </div>
+        </div>
+
+        <!-- Plain-English Explanation -->
+        <div style="background: var(--bg-card-subtle); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem;">
+          <span style="font-size: 0.7rem; font-weight: 700; color: #94A3B8; text-transform: uppercase;">Why was this reward given?</span>
+          <p id="rewardExplanationText" class="reward-explanation-text" style="color: #E2E8F0; margin-top: 0.25rem;">
+            Avoided high morning peak grid tariff (₹8.50/unit) by drawing 20 units from BESS. +50.0 Peak-Shaving bonus granted!
+          </p>
+        </div>
+
+        <!-- Reward Log History -->
+        <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+          <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Recent 10s Step Logs</span>
+          <div id="rewardHistoryList" class="reward-history-list">
+            <!-- Dynamic reward items -->
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL 4: Learning Details -->
+      <div class="sim-card" style="--card-accent: #8B5CF6;">
+        <div class="sim-card-header">
+          <div class="card-title-badge">
+            <i class="fas fa-brain"></i>
+            <span>4. RL Q-Learning Policy Details</span>
+          </div>
+          <div class="live-badge" style="background: rgba(139, 92, 246, 0.15); color: #C084FC; border-color: rgba(139, 92, 246, 0.3);">
+            <span>Q-TABLE ACTIVE</span>
+          </div>
+        </div>
+
+        <!-- Q-Values for all 4 Actions -->
+        <div>
+          <span style="font-size: 0.72rem; font-weight: 700; color: #94A3B8; text-transform: uppercase;">Q-Values for Current State Q(s, a):</span>
+          <div class="qvalues-horizontal-grid" style="margin-top: 0.4rem;">
+            <div class="qval-box" id="qBox_0">
+              <span class="qval-box-actname">0: Grid</span>
+              <span id="qScore_0" class="qval-box-score font-mono">Q = 14.2</span>
+            </div>
+            <div class="qval-box active-action" id="qBox_1">
+              <span class="qval-box-actname">1: BESS</span>
+              <span id="qScore_1" class="qval-box-score font-mono" style="color: #00F0FF;">Q = 54.8</span>
+            </div>
+            <div class="qval-box" id="qBox_2">
+              <span class="qval-box-actname">2: Top-Up</span>
+              <span id="qScore_2" class="qval-box-score font-mono">Q = -8.5</span>
+            </div>
+            <div class="qval-box" id="qBox_3">
+              <span class="qval-box-actname">3: Hybrid</span>
+              <span id="qScore_3" class="qval-box-score font-mono">Q = 32.1</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Exploration & Bellman TD Equation -->
+        <div class="car-stats-subgrid" style="grid-template-columns: 1fr 1fr;">
+          <div class="substat-box">
+            <span class="substat-label">Exploration Rate (ε)</span>
+            <span id="epsilonText" class="substat-value font-mono" style="color: #F59E0B;">25%</span>
+          </div>
+          <div class="substat-box">
+            <span class="substat-label">Bellman TD Error</span>
+            <span id="bellmanDeltaText" class="substat-value font-mono" style="color: #34D399;">ΔQ = +3.42</span>
+          </div>
+        </div>
+
+        <!-- Bellman Equation Display -->
+        <div class="bellman-formula-box">
+          <span style="color: #94A3B8; font-size: 0.7rem;">Bellman Equation Update:</span>
+          <div id="bellmanFormulaText">Q(s, a) ← Q + α[r + γ max Q' - Q] = 54.82</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Live RL Learning Curve Chart (Updating Every 10s) -->
+    <section class="full-chart-section">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <h3 style="font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+          <i class="fas fa-chart-line" style="color: var(--cyan);"></i> Real-Time Step-by-Step Learning & Profit Convergence
+        </h3>
+        <span style="font-size: 0.78rem; color: #94A3B8;">Appends new data point every 10 seconds</span>
+      </div>
+
+      <div class="chart-canvas-box">
+        <canvas id="rlChart"></canvas>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- RL Simulation Script -->
+  <script src="/js/rl-agent.js"></script>
+</body>
+</html>
